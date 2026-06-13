@@ -1,0 +1,73 @@
+# ============================================================
+# PricePulse Analytics — Docker .dockerignore
+# Exclude files not needed in the Docker image
+# ============================================================
+
+# Version control
+.git/
+.gitignore
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environment files (secrets — injected via docker-compose)
+.env
+.env.*
+!.env.example
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
+# Database files (generated at runtime, not needed in image)
+data/*.db
+demo_pricepulse.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Docker files (no recursion)
+docker/Dockerfile
+docker/docker-compose.yml
+docker/.dockerignore
+docker/entrypoint.sh
+
+# Documentation (not needed for runtime)
+docs/
+*.md
+LICENSE
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary / generated files
+dashboard_data.json
+*.log
+
+# Test artifacts
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Node / Playwright (not needed in production image)
+node_modules/
+.playwright/

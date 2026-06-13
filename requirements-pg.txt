@@ -1,0 +1,9 @@
+# ============================================================
+# PricePulse Analytics — PostgreSQL Dependencies
+# Instalar solo si usas PostgreSQL como motor de base de datos
+#
+# Uso:
+#   pip install -r requirements.txt -r requirements-pg.txt
+# ============================================================
+
+psycopg2-binary>=2.9.9

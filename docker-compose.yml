@@ -1,0 +1,110 @@
+# ============================================================
+# PricePulse Analytics — Docker Compose
+# ============================================================
+# Usage:
+#   docker compose up              → levanta todo
+#   docker compose up -d           → levanta en background
+#   docker compose down            → detiene y elimina contenedores
+#   docker compose down -v         → detiene y elimina contenedores + volúmenes
+#   docker compose logs -f app     → sigue logs de la app
+#   docker compose build --no-cache → reconstruye sin cache
+# ============================================================
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: pricepulse-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB:       ${DB_NAME:-pricepulse}
+      POSTGRES_USER:     ${DB_USER:-pricepulse_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-pricepulse_secret}
+
+    ports:
+      - "${DB_PORT_PUBLISHED:-5432}:5432"
+
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-pricepulse_user} -d ${DB_NAME:-pricepulse}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+    networks:
+      - pricepulse-net
+
+  # ── Streamlit App ───────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: pricepulse-app
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    environment:
+      # Database — apunta al contenedor PostgreSQL
+      DATABASE_URL: postgresql+psycopg2://${DB_USER:-pricepulse_user}:${DB_PASSWORD:-pricepulse_secret}@postgres:5432/${DB_NAME:-pricepulse}
+      DB_HOST:     postgres
+      DB_PORT:     5432
+      DB_NAME:     ${DB_NAME:-pricepulse}
+      DB_USER:     ${DB_USER:-pricepulse_user}
+      DB_PASSWORD: ${DB_PASSWORD:-pricepulse_secret}
+
+      # App config
+      SEED_DATA:        ${SEED_DATA:-true}
+      MAX_WAIT_SECONDS: ${MAX_WAIT_SECONDS:-60}
+      LOG_LEVEL:        ${LOG_LEVEL:-INFO}
+
+      # Scraping config (for future pipeline runs)
+      SCRAPE_DELAY_MIN:         ${SCRAPE_DELAY_MIN:-2}
+      SCRAPE_DELAY_MAX:         ${SCRAPE_DELAY_MAX:-8}
+      SCRAPE_MAX_RETRIES:       ${SCRAPE_MAX_RETRIES:-3}
+      SCRAPE_RETRY_DELAY:       ${SCRAPE_RETRY_DELAY:-5}
+      SCRAPE_PRODUCTS_PER_CATEGORY: ${SCRAPE_PRODUCTS_PER_CATEGORY:-20}
+      SCRAPE_MAX_PAGES:         ${SCRAPE_MAX_PAGES:-2}
+
+      # Currency
+      USD_TO_MXN_RATE: ${USD_TO_MXN_RATE:-17.50}
+
+    ports:
+      - "${APP_PORT_PUBLISHED:-8501}:8501"
+
+    volumes:
+      # Persist SQLite data if switching to SQLite mode
+      - app-data:/app/data
+
+    healthcheck:
+      test: ["CMD", "python3", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+
+    networks:
+      - pricepulse-net
+
+# ── Volumes ──────────────────────────────────────────────────
+volumes:
+  pgdata:
+    driver: local
+    name: pricepulse-pgdata
+
+  app-data:
+    driver: local
+    name: pricepulse-app-data
+
+# ── Networks ─────────────────────────────────────────────────
+networks:
+  pricepulse-net:
+    driver: bridge
+    name: pricepulse-network

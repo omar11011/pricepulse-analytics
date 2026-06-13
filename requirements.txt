@@ -1,0 +1,25 @@
+# ============================================================
+# PricePulse Analytics — Dependencies (Streamlit Cloud)
+# Python 3.12+
+# ============================================================
+
+# --- Data Processing ---
+pandas>=2.2.0
+numpy>=1.26.0
+
+# --- Database ---
+# SQLAlchemy soporta SQLite por defecto (viene con Python)
+# Para PostgreSQL: ver requirements-pg.txt
+sqlalchemy>=2.0.0
+
+# --- Dashboard ---
+streamlit>=1.37.0
+plotly>=5.22.0
+
+# --- Scraping (solo si ejecutas el pipeline) ---
+requests>=2.32.0
+beautifulsoup4>=4.12.0
+
+# --- Configuration & Logging ---
+python-dotenv>=1.0.1
+loguru>=0.7.2
