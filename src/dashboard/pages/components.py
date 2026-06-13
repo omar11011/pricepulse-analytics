@@ -96,10 +96,10 @@ def _render_category_tab(category_name: str, products_df: pd.DataFrame, category
             value=(p_min, p_max), key=f"comp_price_{category_name}", format="$%,.0f",
         )
 
-    # Tabla filtrada
-    if not cat_prices.empty:
-        latest_by_product = cat_prices.groupby("product_name")["price"].first().reset_index().rename(columns={"price": "current_price"})
-        filtered = cat_products.merge(latest_by_product, on="product_name", how="left")
+    # Tabla filtrada — merge por nombre de producto
+    if not cat_prices.empty and "product_name" in cat_prices.columns:
+        latest_by_product = cat_prices.groupby("product_name")["price"].first().reset_index().rename(columns={"price": "current_price", "product_name": "name"})
+        filtered = cat_products.merge(latest_by_product, on="name", how="left")
     else:
         filtered = cat_products.copy()
         filtered["current_price"] = 0.0
