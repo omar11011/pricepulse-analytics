@@ -249,7 +249,7 @@ def _render_volatile_products_chart(category_id: int, category_name: str):
             mode="lines+markers", name=display_name,
             line=dict(color=store_color, width=2), marker=dict(size=5),
             hovertemplate=(
-                f"<b>{prod_name[:50]}</b><br>Fecha: %{x}<br>Precio: $%{y:,.2f} MXN<br>"
+                f"<b>{prod_name[:50]}</b><br>Fecha: %%{{x}}<br>Precio: $%%{{y:,.2f}} MXN<br>"
                 f"Volatilidad: {volatility:.2f}<br><extra></extra>"
             ),
         ))
