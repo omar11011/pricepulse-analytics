@@ -80,22 +80,24 @@ class DatabaseSettings:
             return "sqlite"
         return "postgresql"
 
-    @property
-    def _resolved_url(self) -> str:
-        """Resuelve la URL final (DATABASE_URL o construida desde vars)."""
-        if self.url_override:
-            raw = self.url_override
-            # Convertir formato file: (no-SQLAlchemy) a sqlite:/// (SQLAlchemy)
-            if raw.startswith("file:"):
-                path = raw[len("file:"):]
-                # file:/path → sqlite:////path (absoluta con 4 barras)
-                return f"sqlite:///{path}"
-            return raw
-        # Sin DATABASE_URL → construir URL PostgreSQL desde variables individuales
-        return (
-            f"postgresql+psycopg2://{self.user}:{self.password}"
-            f"@{self.host}:{self.port}/{self.name}"
-        )
+        @property
+        def _resolved_url(self) -> str:
+            """URL final: DATABASE_URL > SQLite default > PostgreSQL desde vars."""
+            if self.url_override:
+                raw = self.url_override
+                # formato file: → sqlite:/// (compatibilidad con some cloud providers)
+                if raw.startswith("file:"):
+                    path = raw[len("file:"):]
+                    return f"sqlite:///{path}"
+                return raw
+            # si configuraron host/user, armar URL de PostgreSQL
+            if self.user and self.host != "localhost":
+                return (
+                    f"postgresql+psycopg2://{self.user}:{self.password}"
+                    f"@{self.host}:{self.port}/{self.name}"
+                )
+            # fallback: SQLite local (funciona en dev y Streamlit Cloud)
+            return f"sqlite:///{_PROJECT_ROOT / 'data' / 'pricepulse.db'}"
 
     @property
     def url(self) -> str:

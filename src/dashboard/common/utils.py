@@ -50,6 +50,12 @@ def ensure_database_populated():
         st.session_state.db_populated = False
 
 
+def _is_cloud() -> bool:
+    """Detecta si estamos en Streamlit Cloud."""
+    import os
+    return os.getenv("STREAMLIT_SHARING_MODE", "") == "1" or os.path.exists("/mount/src")
+
+
 def run_pipeline():
     """Ejecuta el pipeline ETL desde el dashboard."""
     with st.spinner("Ejecutando pipeline ETL... Puede tardar varios minutos."):
@@ -60,6 +66,8 @@ def run_pipeline():
             st.session_state.pipeline_result = result
             st.cache_data.clear()
             st.success(f"Pipeline: {result['status']} — {result['products_saved']} productos guardados")
+        except ModuleNotFoundError as e:
+            st.error(f"Pipeline no disponible en este entorno: falta `{e.name}`. Ejecutá el pipeline localmente.")
         except Exception as e:
             st.session_state.pipeline_result = {
                 "status": "failure",
@@ -100,11 +108,7 @@ def render_pipeline_result(result: dict[str, Any]):
 
 
 def render_sidebar() -> str:
-    """Sidebar con navegacion, estado del sistema y boton de pipeline.
-
-    Returns:
-        Nombre de la pagina seleccionada.
-    """
+    """Sidebar con navegacion, estado del sistema y boton de pipeline."""
     with st.sidebar:
         st.markdown('<div class="sidebar-title">PricePulse Analytics</div>', unsafe_allow_html=True)
         st.markdown(
@@ -129,7 +133,6 @@ def render_sidebar() -> str:
 
         st.markdown("---")
 
-        # Tiendas
         st.markdown("### Tiendas monitoreadas")
         for store_name in Stores.ALL:
             icon = STORE_STATUS_ICONS.get(store_name, "🟢")
@@ -137,23 +140,23 @@ def render_sidebar() -> str:
 
         st.markdown("---")
 
-        # Pipeline
-        st.markdown("### Pipeline ETL")
-        st.markdown(
-            '<div style="font-size:0.8rem;color:#90A4AE;margin-bottom:0.5rem;">'
-            'Ejecuta el scraping de las 3 tiendas</div>',
-            unsafe_allow_html=True,
-        )
+        # Pipeline (solo local, en Cloud no hay Playwright)
+        if not _is_cloud():
+            st.markdown("### Pipeline ETL")
+            st.markdown(
+                '<div style="font-size:0.8rem;color:#90A4AE;margin-bottom:0.5rem;">'
+                'Ejecuta el scraping de las 3 tiendas</div>',
+                unsafe_allow_html=True,
+            )
 
-        if st.button("▶ Ejecutar Pipeline", key="run_pipeline", use_container_width=True):
-            run_pipeline()
+            if st.button("▶ Ejecutar Pipeline", key="run_pipeline", use_container_width=True):
+                run_pipeline()
 
-        if "pipeline_result" in st.session_state:
-            render_pipeline_result(st.session_state.pipeline_result)
+            if "pipeline_result" in st.session_state:
+                render_pipeline_result(st.session_state.pipeline_result)
 
         st.markdown("---")
 
-        # Info del sistema
         st.markdown("### Informacion del sistema")
         st.markdown(
             f'<div style="font-size:0.75rem;color:#90A4AE;">'
