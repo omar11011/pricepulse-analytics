@@ -19,17 +19,15 @@ def get_analytics_service() -> AnalyticsService:
 
 
 def ensure_database_populated():
-    """Si la BD esta vacia, corre el seed automaticamente.
-
-    Esto es clave para Streamlit Cloud donde el filesystem se reinicia
-    con cada deploy. En local con datos persistentes, esta funcion no hace nada.
-    """
+    """Si la BD esta vacia, corre el seed automaticamente."""
     if "db_populated" in st.session_state:
         return
 
     try:
-        from src.database.connection import get_session
+        from src.database.connection import init_db, get_session
         from src.database.models import Product
+
+        init_db()
 
         with get_session() as session:
             count = session.query(Product).count()
@@ -48,6 +46,7 @@ def ensure_database_populated():
     except Exception as e:
         logger.error(f"Error en auto-seed: {type(e).__name__}: {e}")
         st.session_state.db_populated = False
+        st.error(f"Error poblando la BD: {type(e).__name__}: {e}")
 
 
 def _is_cloud() -> bool:
